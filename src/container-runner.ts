@@ -4,6 +4,7 @@
  */
 import { ChildProcess, spawn } from 'child_process';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 import {
@@ -11,9 +12,13 @@ import {
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
   DATA_DIR,
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
   GROUPS_DIR,
   IDLE_TIMEOUT,
   ONECLI_URL,
+  TRELLO_API_KEY,
+  TRELLO_TOKEN,
   TIMEZONE,
 } from './config.js';
 import { resolveGroupFolderPath, resolveGroupIpcPath } from './group-folder.js';
@@ -229,6 +234,29 @@ function buildVolumeMounts(
     mounts.push(...validatedMounts);
   }
 
+  // Mount Google OAuth credentials and tokens for Google Drive MCP server
+  const googleDriveMcpConfig = path.join(
+    process.env.HOME || os.homedir(),
+    '.config/google-drive-mcp',
+  );
+  const googleOAuthPath = path.join(googleDriveMcpConfig, 'gcp-oauth.keys.json');
+  const googleTokensPath = path.join(googleDriveMcpConfig, 'tokens.json');
+
+  if (fs.existsSync(googleOAuthPath) && fs.existsSync(googleTokensPath)) {
+    mounts.push(
+      {
+        hostPath: googleOAuthPath,
+        containerPath: '/workspace/google-drive-mcp/gcp-oauth.keys.json',
+        readonly: true,
+      },
+      {
+        hostPath: googleTokensPath,
+        containerPath: '/workspace/google-drive-mcp/tokens.json',
+        readonly: false, // Needs write access for token refresh
+      },
+    );
+  }
+
   return mounts;
 }
 
@@ -241,6 +269,22 @@ async function buildContainerArgs(
 
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
+
+  // Pass Google Workspace credentials for MCP server
+  if (GOOGLE_CLIENT_ID) {
+    args.push('-e', `GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}`);
+  }
+  if (GOOGLE_CLIENT_SECRET) {
+    args.push('-e', `GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}`);
+  }
+
+  // Pass Trello credentials for MCP server
+  if (TRELLO_API_KEY) {
+    args.push('-e', `TRELLO_API_KEY=${TRELLO_API_KEY}`);
+  }
+  if (TRELLO_TOKEN) {
+    args.push('-e', `TRELLO_TOKEN=${TRELLO_TOKEN}`);
+  }
 
   // OneCLI gateway handles credential injection — containers never see real secrets.
   // The gateway intercepts HTTPS traffic and injects API keys or OAuth tokens.

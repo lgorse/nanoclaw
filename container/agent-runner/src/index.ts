@@ -469,6 +469,8 @@ async function runQuery(
         'Skill',
         'NotebookEdit',
         'mcp__nanoclaw__*',
+        'mcp__google-drive__*',
+        'mcp__trello__*',
       ],
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
@@ -482,6 +484,26 @@ async function runQuery(
             NANOCLAW_CHAT_JID: containerInput.chatJid,
             NANOCLAW_GROUP_FOLDER: containerInput.groupFolder,
             NANOCLAW_IS_MAIN: containerInput.isMain ? '1' : '0',
+          },
+        },
+        'google-drive': {
+          command: 'npx',
+          args: ['@piotr-agier/google-drive-mcp'],
+          env: {
+            ...process.env,
+            GOOGLE_DRIVE_OAUTH_CREDENTIALS:
+              '/workspace/google-drive-mcp/gcp-oauth.keys.json',
+            GOOGLE_DRIVE_MCP_TOKEN_PATH:
+              '/workspace/google-drive-mcp/tokens.json',
+          },
+        },
+        trello: {
+          command: 'npx',
+          args: ['@delorenj/mcp-server-trello'],
+          env: {
+            ...process.env,
+            TRELLO_API_KEY: process.env.TRELLO_API_KEY || '',
+            TRELLO_TOKEN: process.env.TRELLO_TOKEN || '',
           },
         },
       },

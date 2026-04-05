@@ -10,6 +10,10 @@ const envConfig = readEnvFile([
   'ASSISTANT_HAS_OWN_NUMBER',
   'ONECLI_URL',
   'TZ',
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'TRELLO_API_KEY',
+  'TRELLO_TOKEN',
 ]);
 
 export const ASSISTANT_NAME =
@@ -53,6 +57,14 @@ export const CONTAINER_MAX_OUTPUT_SIZE = parseInt(
 ); // 10MB default
 export const ONECLI_URL =
   process.env.ONECLI_URL || envConfig.ONECLI_URL || 'http://localhost:10254';
+export const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID || envConfig.GOOGLE_CLIENT_ID || '';
+export const GOOGLE_CLIENT_SECRET =
+  process.env.GOOGLE_CLIENT_SECRET || envConfig.GOOGLE_CLIENT_SECRET || '';
+export const TRELLO_API_KEY =
+  process.env.TRELLO_API_KEY || envConfig.TRELLO_API_KEY || '';
+export const TRELLO_TOKEN =
+  process.env.TRELLO_TOKEN || envConfig.TRELLO_TOKEN || '';
 export const MAX_MESSAGES_PER_PROMPT = Math.max(
   1,
   parseInt(process.env.MAX_MESSAGES_PER_PROMPT || '10', 10) || 10,
