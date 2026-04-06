@@ -104,6 +104,15 @@ function buildVolumeMounts(
       readonly: false,
     });
 
+    // Main gets writable access to groups/global/ — shadows the ro project mount
+    const globalDir = path.join(GROUPS_DIR, 'global');
+    fs.mkdirSync(globalDir, { recursive: true });
+    mounts.push({
+      hostPath: globalDir,
+      containerPath: '/workspace/project/groups/global',
+      readonly: false,
+    });
+
     // Main also gets its group folder as the working directory
     mounts.push({
       hostPath: groupDir,
@@ -118,14 +127,14 @@ function buildVolumeMounts(
       readonly: false,
     });
 
-    // Global memory directory (read-only for non-main)
+    // Global memory directory (read-write for all groups)
     // Only directory mounts are supported, not file mounts
     const globalDir = path.join(GROUPS_DIR, 'global');
     if (fs.existsSync(globalDir)) {
       mounts.push({
         hostPath: globalDir,
         containerPath: '/workspace/global',
-        readonly: true,
+        readonly: false,
       });
     }
   }
