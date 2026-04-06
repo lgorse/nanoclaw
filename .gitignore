@@ -36,3 +36,10 @@ groups/global/*
 .nanoclaw/
 
 agents-sdk-docs
+
+# Deployment files with credentials
+deploy-app.sh
+deploy-setup.sh
+DEPLOYMENT.md
+*.tar.gz
+whatsapp-auth/
