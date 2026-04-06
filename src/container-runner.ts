@@ -8,6 +8,7 @@ import os from 'os';
 import path from 'path';
 
 import {
+  ANTHROPIC_API_KEY,
   CONTAINER_IMAGE,
   CONTAINER_MAX_OUTPUT_SIZE,
   CONTAINER_TIMEOUT,
@@ -239,7 +240,10 @@ function buildVolumeMounts(
     process.env.HOME || os.homedir(),
     '.config/google-drive-mcp',
   );
-  const googleOAuthPath = path.join(googleDriveMcpConfig, 'gcp-oauth.keys.json');
+  const googleOAuthPath = path.join(
+    googleDriveMcpConfig,
+    'gcp-oauth.keys.json',
+  );
   const googleTokensPath = path.join(googleDriveMcpConfig, 'tokens.json');
 
   if (fs.existsSync(googleOAuthPath) && fs.existsSync(googleTokensPath)) {
@@ -269,6 +273,11 @@ async function buildContainerArgs(
 
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
+
+  // Pass Anthropic API key for Claude
+  if (ANTHROPIC_API_KEY) {
+    args.push('-e', `ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}`);
+  }
 
   // Pass Google Workspace credentials for MCP server
   if (GOOGLE_CLIENT_ID) {
