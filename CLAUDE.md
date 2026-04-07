@@ -78,3 +78,112 @@ systemctl --user restart nanoclaw
 ## Container Build Cache
 
 The container buildkit caches the build context aggressively. `--no-cache` alone does NOT invalidate COPY steps — the builder's volume retains stale files. To force a truly clean rebuild, prune the builder then re-run `./container/build.sh`.
+
+## Health Check Checklist
+
+Run this checklist after any significant change (restart, config update, state clear, etc.)
+
+### 1. Service & Container Health
+- [ ] Service is running: `ssh root@64.227.103.46 'systemctl status nanoclaw'`
+- [ ] Container spawned: `ssh root@64.227.103.46 'docker ps --filter "name=nanoclaw"'`
+- [ ] No orphaned containers: Check for multiple containers running
+- [ ] Logs show "NanoClaw running": `journalctl -u nanoclaw --since "1 minute ago"`
+
+### 2. MCP Configuration
+- [ ] Config exists: `ssh root@64.227.103.46 'test -f /home/nanoclaw/nanoclaw/data/sessions/whatsapp_main/.claude/claude_desktop_config.json && echo "✓ Config exists" || echo "✗ MISSING"'`
+- [ ] Google Drive MCP configured with correct paths
+- [ ] Trello MCP configured with credentials
+- [ ] Token files exist:
+  - `ls /home/nanoclaw/.config/google-drive-mcp/tokens.json`
+  - `ls /home/nanoclaw/.config/google-drive-mcp/gcp-oauth.keys.json`
+- [ ] Tokens mounted in container: `docker exec <container> ls /workspace/google-drive-mcp/tokens.json`
+
+### 3. Session State Consistency
+- [ ] Session DB matches .claude files:
+  - `sqlite3 /home/nanoclaw/nanoclaw/store/messages.db "SELECT * FROM sessions;"`
+  - `ls /home/nanoclaw/nanoclaw/data/sessions/whatsapp_main/.claude/sessions/`
+- [ ] If mismatch: Clear sessions table or recreate session files
+
+### 4. Message Processing
+- [ ] Send test message to Pet
+- [ ] Wait 30s, check if container spawns
+- [ ] Monitor CPU usage: `docker stats --no-stream <container>`
+  - Active processing: 20-70% CPU
+  - Stuck: <1% CPU for >2 minutes
+- [ ] Check logs for progress: `docker logs --tail 20 <container>`
+- [ ] Verify response sent (check WhatsApp or logs)
+
+### 5. Common Failure Patterns
+- [ ] **Stuck at message #X with low CPU**: Kill container, check session mismatch
+- [ ] **"No conversation found" error**: Session ID in DB doesn't match files - clear sessions table
+- [ ] **MCP tools not working**: Check config file exists and has correct paths/credentials
+- [ ] **Container immediately exits**: Check logs for API errors or missing mounts
+
+### 6. After State Clearing Operations
+
+If you cleared `/home/nanoclaw/nanoclaw/data/sessions/whatsapp_main/.claude/*`:
+- [ ] Recreate `claude_desktop_config.json` with MCP servers
+- [ ] Clear sessions table: `sqlite3 /home/nanoclaw/nanoclaw/store/messages.db "DELETE FROM sessions;"`
+- [ ] Restart service
+- [ ] Run full checklist
+
+### 7. Clear Past Message Attempts
+
+Use when:
+- Hit rate limits and want to skip queued retries
+- Deployed a bug fix and want to skip old failed messages
+- Containers keep spawning for old messages
+
+**Procedure:**
+```bash
+# 1. Stop service
+ssh root@64.227.103.46 'systemctl stop nanoclaw'
+
+# 2. Kill any running containers
+ssh root@64.227.103.46 'docker ps --filter "name=nanoclaw" -q | xargs -r docker kill'
+
+# 3. Update message timestamps to skip old messages
+ssh root@64.227.103.46 "sqlite3 /home/nanoclaw/nanoclaw/store/messages.db \"UPDATE router_state SET value = '\$(date -u +%Y-%m-%dT%H:%M:%S.000Z)' WHERE key = 'last_timestamp';\""
+
+ssh root@64.227.103.46 "sqlite3 /home/nanoclaw/nanoclaw/store/messages.db \"UPDATE router_state SET value = '{\\\\\\\"16506449188@s.whatsapp.net\\\\\\\":\\\\\\\"\$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\\\\\\\"}' WHERE key = 'last_agent_timestamp';\""
+
+# 4. Restart service
+ssh root@64.227.103.46 'systemctl start nanoclaw'
+
+# 5. Verify no old messages processing
+ssh root@64.227.103.46 'docker ps --filter "name=nanoclaw"'  # Should show no containers
+ssh root@64.227.103.46 'journalctl -u nanoclaw --since "1 minute ago"'  # Should be idle
+```
+
+**Verification checklist:**
+- [ ] No containers running: `docker ps --filter "name=nanoclaw"`
+- [ ] Service is active: `systemctl status nanoclaw`
+- [ ] Logs show "NanoClaw running" with no container spawns
+- [ ] Ready for new messages
+
+### Quick Commands
+
+Status check:
+```bash
+pet-status
+```
+
+Restart:
+```bash
+pet-restart
+```
+
+Clear message queue (skip old attempts):
+```bash
+pet-clear-queue
+```
+
+Monitor logs:
+```bash
+pet-logs
+```
+
+Full health check (one-liner):
+```bash
+ssh root@64.227.103.46 'systemctl status nanoclaw && docker ps --filter "name=nanoclaw" && test -f /home/nanoclaw/nanoclaw/data/sessions/whatsapp_main/.claude/claude_desktop_config.json && echo "✓ MCP config exists" || echo "✗ MCP config missing"'
+```

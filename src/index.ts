@@ -404,6 +404,23 @@ async function runAgent(
     }
 
     if (output.status === 'error') {
+      // Detect non-retryable errors (rate limits, quota exceeded, invalid requests)
+      // These are 400-class errors that should not trigger infinite retries
+      const isNonRetryableError =
+        output.error &&
+        /workspace API usage limit|rate limit|quota.*exceed|invalid_request_error|400/i.test(
+          output.error,
+        );
+
+      if (isNonRetryableError) {
+        logger.error(
+          { group: group.name, error: output.error },
+          'Non-retryable error (rate limit/quota/invalid request) - skipping retry to prevent infinite loop',
+        );
+        // Return 'success' to prevent retry loop, even though there was an error
+        return 'success';
+      }
+
       // Detect stale/corrupt session — clear it so the next retry starts fresh.
       // The session .jsonl can go missing after a crash mid-write, manual
       // deletion, or disk-full. The existing backoff in group-queue.ts
