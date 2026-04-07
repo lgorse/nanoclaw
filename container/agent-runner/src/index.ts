@@ -497,7 +497,7 @@ async function runQuery(
             ...process.env,
             GOOGLE_DRIVE_OAUTH_CREDENTIALS:
               '/workspace/google-drive-mcp/gcp-oauth.keys.json',
-            GOOGLE_DRIVE_MCP_TOKEN_PATH:
+            GOOGLE_DRIVE_TOKENS:
               '/workspace/google-drive-mcp/tokens.json',
           },
         },
@@ -564,6 +564,22 @@ async function runQuery(
       resultCount++;
       const textResult =
         'result' in message ? (message as { result?: string }).result : null;
+
+      // Detect non-retryable API errors in result text
+      const isNonRetryableError = textResult &&
+        /workspace API usage limit|rate limit|quota.*exceed|invalid_request_error|API Error: 400/i.test(textResult);
+
+      if (isNonRetryableError) {
+        log(`Non-retryable error detected in result, returning error status to prevent retry loop`);
+        writeOutput({
+          status: 'error',
+          result: null,
+          error: textResult,
+          newSessionId,
+        });
+        process.exit(0);
+      }
+
       log(
         `Result #${resultCount}: subtype=${message.subtype}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`,
       );
