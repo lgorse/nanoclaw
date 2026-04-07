@@ -435,6 +435,10 @@ async function runQuery(
     log(`Additional directories: ${extraDirs.join(', ')}`);
   }
 
+  // Track consecutive API retries to detect persistent rate limits
+  let consecutiveRetries = 0;
+  const MAX_CONSECUTIVE_RETRIES = 10;
+
   for await (const message of query({
     prompt: stream,
     options: {
@@ -520,6 +524,18 @@ async function runQuery(
         ? `system/${(message as { subtype?: string }).subtype}`
         : message.type;
     log(`[msg #${messageCount}] type=${msgType}`);
+
+    // Detect persistent rate limiting
+    if (message.type === 'system' && (message as { subtype?: string }).subtype === 'api_retry') {
+      consecutiveRetries++;
+      if (consecutiveRetries >= MAX_CONSECUTIVE_RETRIES) {
+        log(`Persistent rate limit detected after ${consecutiveRetries} retries, failing gracefully`);
+        throw new Error('API rate limit exceeded - too many consecutive retries');
+      }
+    } else {
+      // Reset counter on any non-retry message
+      consecutiveRetries = 0;
+    }
 
     if (message.type === 'assistant' && 'uuid' in message) {
       lastAssistantUuid = (message as { uuid: string }).uuid;
