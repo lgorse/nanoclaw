@@ -1,11 +1,19 @@
 {
   "mcpServers": {
-    "google-workspace": {
+    "google-drive": {
       "command": "npx",
-      "args": ["@aaronsb/google-workspace-mcp"],
+      "args": ["@piotr-agier/google-drive-mcp"],
       "env": {
-        "GOOGLE_CLIENT_ID": "${GOOGLE_CLIENT_ID}",
-        "GOOGLE_CLIENT_SECRET": "${GOOGLE_CLIENT_SECRET}"
+        "GOOGLE_DRIVE_OAUTH_CREDENTIALS": "/workspace/google-drive-mcp/gcp-oauth.keys.json",
+        "GOOGLE_DRIVE_TOKENS": "/workspace/google-drive-mcp/tokens.json"
+      }
+    },
+    "trello": {
+      "command": "node",
+      "args": ["/workspace/project/node_modules/@modelcontextprotocol/server-trello/dist/index.js"],
+      "env": {
+        "TRELLO_API_KEY": "${TRELLO_API_KEY}",
+        "TRELLO_TOKEN": "${TRELLO_TOKEN}"
       }
     }
   }
