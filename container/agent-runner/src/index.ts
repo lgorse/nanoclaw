@@ -479,7 +479,6 @@ async function runQuery(
       env: sdkEnv,
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
-      settingSources: ['project', 'user'],
       mcpServers: {
         nanoclaw: {
           command: 'node',
@@ -494,7 +493,6 @@ async function runQuery(
           command: 'npx',
           args: ['@piotr-agier/google-drive-mcp'],
           env: {
-            ...process.env,
             GOOGLE_DRIVE_OAUTH_CREDENTIALS:
               '/workspace/google-drive-mcp/gcp-oauth.keys.json',
             GOOGLE_DRIVE_TOKENS:
@@ -505,7 +503,6 @@ async function runQuery(
           command: 'npx',
           args: ['@delorenj/mcp-server-trello'],
           env: {
-            ...process.env,
             TRELLO_API_KEY: process.env.TRELLO_API_KEY || '',
             TRELLO_TOKEN: process.env.TRELLO_TOKEN || '',
           },
