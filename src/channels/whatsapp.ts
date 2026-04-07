@@ -316,7 +316,7 @@ export class WhatsAppChannel implements Channel {
             // (even in DMs/self-chat) so we check for that.
             const isBotMessage = ASSISTANT_HAS_OWN_NUMBER
               ? fromMe
-              : content.startsWith(`${ASSISTANT_NAME}:`);
+              : content.startsWith(`${ASSISTANT_DISPLAY_NAME}:`);
 
             this.opts.onMessage(chatJid, {
               id: msg.key.id || '',
