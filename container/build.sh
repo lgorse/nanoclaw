@@ -9,11 +9,14 @@ cd "$SCRIPT_DIR"
 IMAGE_NAME="nanoclaw-agent"
 TAG="${1:-latest}"
 CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
+# Always build for AMD64 (server platform), even on ARM64 Mac
+PLATFORM="${PLATFORM:-linux/amd64}"
 
 echo "Building NanoClaw agent container image..."
 echo "Image: ${IMAGE_NAME}:${TAG}"
+echo "Platform: ${PLATFORM}"
 
-${CONTAINER_RUNTIME} build -t "${IMAGE_NAME}:${TAG}" .
+${CONTAINER_RUNTIME} buildx build --platform "${PLATFORM}" -t "${IMAGE_NAME}:${TAG}" .
 
 echo ""
 echo "Build complete!"
