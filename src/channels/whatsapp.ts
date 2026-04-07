@@ -316,7 +316,7 @@ export class WhatsAppChannel implements Channel {
             // (even in DMs/self-chat) so we check for that.
             const isBotMessage = ASSISTANT_HAS_OWN_NUMBER
               ? fromMe
-              : content.startsWith(`${ASSISTANT_DISPLAY_NAME}:`);
+              : content.startsWith(`${ASSISTANT_NAME}:`);
 
             this.opts.onMessage(chatJid, {
               id: msg.key.id || '',
@@ -354,10 +354,10 @@ export class WhatsAppChannel implements Channel {
     // On a shared number, prefix is also needed in DMs (including self-chat)
     // to distinguish bot output from user messages.
     // Skip only when the assistant has its own dedicated phone number.
-    const displayName = ASSISTANT_DISPLAY_NAME;
+    // Use ASSISTANT_NAME (not DISPLAY_NAME) for protocol consistency.
     const prefixed = ASSISTANT_HAS_OWN_NUMBER
       ? text
-      : `${displayName}: ${text}`;
+      : `${ASSISTANT_NAME}: ${text}`;
 
     if (!this.connected) {
       this.outgoingQueue.push({ jid, text: prefixed });
