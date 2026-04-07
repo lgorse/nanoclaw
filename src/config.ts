@@ -7,6 +7,7 @@ import { isValidTimezone } from './timezone.js';
 // Read config values from .env (falls back to process.env).
 const envConfig = readEnvFile([
   'ASSISTANT_NAME',
+  'ASSISTANT_DISPLAY_NAME',
   'ASSISTANT_HAS_OWN_NUMBER',
   'ONECLI_URL',
   'TZ',
